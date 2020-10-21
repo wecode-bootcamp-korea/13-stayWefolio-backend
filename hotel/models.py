@@ -159,7 +159,7 @@ class HotelInformation(models.Model):
     special3_content       = models.TextField()
 
     class Meta: 
-        db_table = 'more_infos'
+        db_table = 'hotel_informations'
 
 class InfoLocation(models.Model): 
     info            = models.ForeignKey(HotelInformation, on_delete=models.CASCADE)
