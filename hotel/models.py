@@ -1,7 +1,6 @@
-from django.db import models
+from django.db      import models
 
-from user.models import User
-#from booking.models import Booking
+from user.models    import User
 
 class Category(models.Model): 
     name = models.CharField(max_length=20)
@@ -88,7 +87,7 @@ class Room(models.Model):
     price_weekend = models.DecimalField(max_digits=18, decimal_places=2)
     price_peak    = models.DecimalField(max_digits=18, decimal_places=2)
     stay_at_least = models.IntegerField()
-    # booking       = models.ManyToManyField(User, through='Booking', related_name='rooms')
+    booking       = models.ManyToManyField(User, through='booking.Booking', related_name='rooms')
 
     class Meta: 
         db_table = 'rooms'
