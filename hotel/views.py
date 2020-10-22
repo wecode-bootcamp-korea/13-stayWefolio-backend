@@ -9,6 +9,7 @@ from .models          import Hotel
 
 class MainBannerView(View):
     def get(self, request):
+<<<<<<< HEAD
         try:
             hotels  = Hotel.objects.all()[:10]
             banners = [{
@@ -59,4 +60,26 @@ class PicksView(View):
         for i in range(len(hotels))]
 
         return JsonResponse({'hotels': picks}, status=200)
+=======
+        hotels  = Hotel.objects.all()[:10]
+        banners = [{
+            'hotel_name': hotel.name,
+            'desc'      : hotel.introduction,
+            'image'     : hotel.thumbnail_url,
+        } for hotel in hotels]
+        return JsonResponse({'data': banners}, status=200)
+
+class MagazineView(View):
+    def get(self, request):
+        hotels    = Hotel.objects.all()[:2]
+        magazines = [{
+            'hotel_name': hotel.name,
+            'type'      : hotel.category.name,
+            'location'  : hotel.location.name,
+            'desc_title': hotel.description_title,
+            'desc'      : hotel.description_first,
+            'image'     : hotel.thumbnail_url,
+        } for hotel in hotels]
+        return JsonResponse({'data': magazines}, status=200)
+>>>>>>> master
 
