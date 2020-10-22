@@ -1,7 +1,7 @@
-
 from django.urls import path
-from .views import *
+from .views      import MainBannerView, MagazineView
 
 urlpatterns = [
-    #path('/', SignUpView.as_view()),
+    path('/banner', MainBannerView.as_view()),
+    path('/magazine', MagazineView.as_view()),
 ]
