@@ -26,6 +26,6 @@ class MagazineView(View):
             'desc_title': hotel.description_title,
             'desc'      : hotel.description_first,
             'image'     : hotel.thumbnail_url,
-        }  for hotel in hotels]
+        } for hotel in hotels]
         return JsonResponse({'data': magazines}, status=200)
 
