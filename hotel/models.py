@@ -143,6 +143,12 @@ class RoomFacility(models.Model):
     class Meta: 
         db_table = 'room_facilities'
 
+class PriceRange(models.Model):
+    name=models.CharField(max_length=100)
+
+    class Meta:
+        db_table='price_ranges'
+
 class HotelInformation(models.Model): 
     hotel                  = models.ForeignKey(Hotel, on_delete=models.CASCADE)
     description            = models.CharField(max_length=200)
