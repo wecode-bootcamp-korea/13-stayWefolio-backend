@@ -55,12 +55,12 @@ class DetailPageView(View):
     def get(self, request,hotel_id):
         rooms=Room.objects.select_related('hotel').filter(hotel_id=hotel_id).order_by('id')
         print('aaa')
-        detail=[
-            {
+        detail=[{'common_info':{
               'hotel_name':rooms.first().hotel.name,
               'hotel_english_name':rooms.first().hotel.english_name,
               'hotel_introduction':rooms.first().hotel.introduction,
-            },[{
+            },
+            'rooms':[{
                 'room_name':room.name,
                 'room_type':room.types.get(id=room.id).name,
                 'room_introduction':room.introduction,
@@ -75,6 +75,7 @@ class DetailPageView(View):
                 # name과 icon_url을 각각 리스트에 넣을지, 하나의 딕셔너리에 넣을지 해보고 결정
                 'facility':[{'name':facility.name, 'icon_url':facility.icon_url} for facility in room.facilities.all()],
                 'service':[{'name':service.name, 'icon_url':service.icon_url} for service in room.hotel.services.all()]
-            } for room in rooms]
+            } for room in rooms]}
+            
         ]
         return JsonResponse({'detail':detail}, status=200)
