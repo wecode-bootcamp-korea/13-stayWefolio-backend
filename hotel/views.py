@@ -54,7 +54,6 @@ class PicksView(View):
 class DetailPageView(View):
     def get(self, request,hotel_id):
         rooms=Room.objects.select_related('hotel').filter(hotel_id=hotel_id).order_by('id')
-        print('aaa')
         detail=[{'common_info':{
               'hotel_name':rooms.first().hotel.name,
               'hotel_english_name':rooms.first().hotel.english_name,
@@ -62,7 +61,7 @@ class DetailPageView(View):
             },
             'rooms':[{
                 'room_name':room.name,
-                'room_type':room.types.get(id=room.id).name,
+                'room_type':room.roomtype_set.first().type.name,
                 'room_introduction':room.introduction,
                 'checkin_time':room.hotel.checkin_time,
                 'checkout_time':room.hotel.checkout_time,
