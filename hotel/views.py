@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.http      import JsonResponse
 from django.db.models import Min, Max
 
-from .models          import Hotel, Room
+from .models          import Hotel, Room, Category, Location, PriceRange
 
 class MainBannerView(View):
     def get(self, request):
@@ -34,8 +34,50 @@ class MagazineView(View):
 class PicksView(View):
     def get(self, request):
         hotels=Hotel.objects.all()
-        picks=[
-            {
+        filter_set=[]
+        if request.GET.get('category'):
+            filter_set.append({'category__name':request.GET['category'].strip("'")})
+        if request.GET.get('location'):
+            filter_set.append({'location__name__contains':request.GET['location'].strip("'")})
+
+        for field in filter_set:
+            if filter_set == []:
+                break
+            hotels=hotels.filter(**field)
+
+        if request.GET.get('price'):
+            price=request.GET['price'].strip("'").split('~')
+            if price[0] == '':
+                min_price = 0
+                max_price = int(price[1].strip('원'))
+            elif price[1] == '':
+                min_price = int(price[0].strip('원'))
+                max_price = int(1e8)
+            else:
+                min_price = int(price[0])
+                max_price = int(price[1].strip('원'))
+
+            hotel_price_range=[hotel.id for hotel in hotels if min_price<= hotel.room_set.aggregate(p=Min('price'))['p']<max_price]
+
+            hotels=hotels.filter(id__in=hotel_price_range)
+
+        offset = int(request.GET.get('offset'))
+        LIMIT  = int(request.GET.get('limit'))
+
+        if offset >= len(hotels):
+            return JsonResponse({'message':'PAGE NOT FOUND😰😰'}, status=404)
+        elif offset+LIMIT>len(hotels):
+            hotels = hotels[offset:]
+        else:
+            hotels = hotels[offset:offset+LIMIT]
+
+        locations={}
+        picks=[{'filters':[
+            {'options': ['타입전체']+[category.name for category in Category.objects.all()]},
+            {'options': ['지역전체']+[locations.setdefault(location.name.split('/')[0],location.name.split('/')[0]) for location in Location.objects.all() if location.name.split('/')[0] not in locations]},
+            {'options': ['금액전체']+[price.name for price in PriceRange.objects.all()]}
+        ]},{'picks':
+        [{
             'id'           : hotel.id,
             'name'         : hotel.name,
             'english_name' : hotel.english_name,
@@ -47,33 +89,32 @@ class PicksView(View):
             'max_price'    : "{:,}".format(int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p'])),
             'tags'         : [tag.name for tag in hotel.tags.all()]
             }
-        for hotel in hotels]
-        
+        for hotel in hotels]}]
+            
         return JsonResponse({'hotels': picks}, status=200)
 
 class DetailPageView(View):
     def get(self, request,hotel_id):
         rooms=Room.objects.select_related('hotel').filter(hotel_id=hotel_id).order_by('id')
         detail=[{'common_info':{
-              'hotel_name':rooms.first().hotel.name,
-              'hotel_english_name':rooms.first().hotel.english_name,
-              'hotel_introduction':rooms.first().hotel.introduction,
+              'hotel_name'        : rooms.first().hotel.name,
+              'hotel_english_name': rooms.first().hotel.english_name,
+              'hotel_introduction': rooms.first().hotel.introduction,
             },
             'rooms':[{
-                'room_name':room.name,
-                'room_type':room.roomtype_set.first().type.name,
-                'room_introduction':room.introduction,
-                'checkin_time':room.hotel.checkin_time,
-                'checkout_time':room.hotel.checkout_time,
-                'min_people':room.min_people,
-                'max_people':room.max_people,
-                'area':int(room.area),
-                'bed':[{'bed_type':bed.bed_type.name,'number_of_beds':bed.number}for bed in room.bed_set.all()],
-                'tags':[tag.name for tag in room.hotel.tags.all()] if len(room.hotel.tags.all())<=3 else [tag.name for tag in room.hotel.tags.all()[:3]],
-                'price':chr(0x20A9)+"{:,}".format(int(room.price))+'~',
-                # name과 icon_url을 각각 리스트에 넣을지, 하나의 딕셔너리에 넣을지 해보고 결정
-                'facility':[{'name':facility.name, 'icon_url':facility.icon_url} for facility in room.facilities.all()],
-                'service':[{'name':service.name, 'icon_url':service.icon_url} for service in room.hotel.services.all()]
+                'room_name'        : room.name,
+                'room_type'        : room.roomtype_set.first().type.name,
+                'room_introduction': room.introduction,
+                'checkin_time'     : room.hotel.checkin_time,
+                'checkout_time'    : room.hotel.checkout_time,
+                'min_people'       : room.min_people,
+                'max_people'       : room.max_people,
+                'area'             : f"{int(room.area)}{chr(0x33A1)}",
+                'bed'              : [{'bed_type':bed.bed_type.name,'number_of_beds':bed.number}for bed in room.bed_set.all()],
+                'tags'             : [tag.name for tag in room.hotel.tags.all()] if len(room.hotel.tags.all())<=3 else [tag.name for tag in room.hotel.tags.all()[:3]],
+                'price'            : chr(0x20A9)+"{:,}".format(int(room.price))+'~',
+                'facility'         : [{'name':facility.name, 'icon_url':facility.icon_url} for facility in room.facilities.all()],
+                'service'          : [{'name':service.name, 'icon_url':service.icon_url} for service in room.hotel.services.all()]
             } for room in rooms]}
             
         ]
