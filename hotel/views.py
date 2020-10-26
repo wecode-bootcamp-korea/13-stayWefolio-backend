@@ -34,7 +34,6 @@ class MagazineView(View):
 class PicksView(View):
     def get(self, request):
         hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').all().order_by('id')
-        print(hotels)
         filter_set=[]
         if request.GET.get('category'):
             filter_set.append({'category__name':request.GET['category'].strip("'")})
