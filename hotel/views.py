@@ -49,14 +49,13 @@ class PicksView(View):
             price=request.GET['price'].strip("'").split('~')
             if price[0] == '':
                 min_price = 0
-                max_price = int(price[1].strip('원'))
+                max_price = int(price[1].replace(",","").strip('원'))
             elif price[1] == '':
-                min_price = int(price[0].strip('원'))
+                min_price = int(price[0].replace(",","").strip('원'))
                 max_price = int(1e8)
             else:
-                min_price = int(price[0])
-                max_price = int(price[1].strip('원'))
-
+                min_price = int(price[0].replace(",",""))
+                max_price = int(price[1].replace(",","").strip('원'))
             hotel_price_range=[hotel.id for hotel in hotels if min_price<= hotel.room_set.aggregate(p=Min('price'))['p']<max_price]
 
             hotels=hotels.filter(id__in=hotel_price_range)
