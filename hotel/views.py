@@ -84,8 +84,8 @@ class PicksView(View):
             'thumbnail_url': hotel.thumbnail_url,
             'location'     : hotel.location.name,
             'category'     : hotel.category.name,
-            'min_price'    : "{:,}".format(int(hotel.room_set.aggregate(min_p=Min('price_weekday'))['min_p'])),
-            'max_price'    : "{:,}".format(int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p'])),
+            'min_price'    : int(hotel.room_set.aggregate(min_p=Min('price_weekday'))['min_p']),
+            'max_price'    : int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p']),
             'tags'         : [tag.name for tag in hotel.tags.all()]
             }
         for hotel in hotels]}]
