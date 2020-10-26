@@ -96,6 +96,7 @@ class DetailPageView(View):
     def get(self, request,hotel_id):
         rooms=Room.objects.select_related('hotel').prefetch_related('roomimage_set','bed_set','facilities','hotel__tags','hotel__services').filter(hotel_id=hotel_id).order_by('id')
         detail=[{'common_info':{
+              'room_count'        : len(rooms),
               'hotel_name'        : rooms.first().hotel.name,
               'hotel_english_name': rooms.first().hotel.english_name,
               'hotel_introduction': rooms.first().hotel.introduction,
