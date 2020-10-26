@@ -33,7 +33,8 @@ class MagazineView(View):
 
 class PicksView(View):
     def get(self, request):
-        hotels=Hotel.objects.all()
+        hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').all().order_by('id')
+        print(hotels)
         filter_set=[]
         if request.GET.get('category'):
             filter_set.append({'category__name':request.GET['category'].strip("'")})
@@ -94,7 +95,7 @@ class PicksView(View):
 
 class DetailPageView(View):
     def get(self, request,hotel_id):
-        rooms=Room.objects.select_related('hotel').filter(hotel_id=hotel_id).order_by('id')
+        rooms=Room.objects.select_related('hotel').prefetch_related('bed_set','facilities','hotel__tags','hotel__services').filter(hotel_id=hotel_id).order_by('id')
         detail=[{'common_info':{
               'hotel_name'        : rooms.first().hotel.name,
               'hotel_english_name': rooms.first().hotel.english_name,
