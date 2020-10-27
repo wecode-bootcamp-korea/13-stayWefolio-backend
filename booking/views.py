@@ -1,4 +1,5 @@
 import json
+import datetime
 
 from django.views     import View
 from django.shortcuts import get_object_or_404
@@ -10,13 +11,14 @@ from hotel.models     import Room
 
 class BookingView(View):
     def get(self, request):
-              room_id    = request.GET.get('room_id')
-              room       = Room.objects.get(id=room_id)
-       year1,month1,day1 = request.GET.get('start').split('-')
-       year2,month2,day2 = request.GET.get('end').split('-')
-              date_start = datetime.date(int(year1), int(month1), int(day1))
-              date_end   = datetime.date(int(year2), int(month2), int(day2))
-              delta      = datetime.timedelta(days=1)
+        room_id           = request.GET.get('room_id')
+        room              = get_object_or_404(Room, id=room_id)
+        bookings          = Booking.objects.filter(room_id=room_id)
+        year1,month1,day1 = request.GET.get('start').split('-')
+        year2,month2,day2 = request.GET.get('end').split('-')
+        date_start        = datetime.date(int(year1), int(month1), int(day1))
+        date_end          = datetime.date(int(year2), int(month2), int(day2))
+        delta             = datetime.timedelta(days=1)
 
         date_list = []
         while date_start<=date_end:
@@ -34,18 +36,12 @@ class BookingView(View):
                 else:
                     prices[f"{str(date)}"]=room.price_weekend
 
-        bookings      = Booking.objects.filter(room_id=room_id)
-        booked_dates  = [{'date_from':booking.date_from,'date_to':booking.date_to} for booking in bookings]
-        name          = User.objects.get(id=request.user).name
-        email         = User.objects.get(id=request.user).email
-        stay_at_least = Room.objects.get(id=room_id).stay_at_least
-
-        booking=[{'stay_at_least':stay_at_least,
+        booking=[{'stay_at_least' : room.stay_at_least,
             'user':{
-                'name':name,
-                'email':email
+                'name' : get_object_or_404(User, id=request.user).name,
+                'email': get_object_or_404(User, id=request.user).email
             },
-            'booked_dates':booked_dates,
-            'prices':prices
+            'booked_dates': [{'date_from':booking.date_from,'date_to':booking.date_to} for booking in bookings],
+            'prices'      : prices
         }]
         return JsonResponse({'booking_info':booking}, status=200)
