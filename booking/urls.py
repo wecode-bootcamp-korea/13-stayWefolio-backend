@@ -2,5 +2,5 @@ from django.urls import path
 from .views      import BookingView
 
 urlpatterns = [
-    path('/new', BookingView.as_view()),
+    path('/<int:room_id>', BookingView.as_view()),
 ]
