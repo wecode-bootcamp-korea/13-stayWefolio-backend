@@ -4,6 +4,7 @@ import datetime
 from django.views     import View
 from django.shortcuts import get_object_or_404
 from django.http      import JsonResponse
+from django.db.models import Q
 
 from .models          import Booking, BookedRoom
 from user.models      import User
@@ -13,9 +14,9 @@ class BookingView(View):
     def get(self, request):
         room_id           = request.GET.get('room_id')
         room              = get_object_or_404(Room, id=room_id)
-        bookings          = Booking.objects.filter(room_id=room_id)
         year1,month1,day1 = request.GET.get('start').split('-')
         year2,month2,day2 = request.GET.get('end').split('-')
+        bookings          = Booking.objects.filter(Q(date_from__month=month1) | Q(date_from__month=month2), room_id=room_id)
         date_start        = datetime.date(int(year1), int(month1), int(day1))
         date_end          = datetime.date(int(year2), int(month2), int(day2))
         delta             = datetime.timedelta(days=1)
