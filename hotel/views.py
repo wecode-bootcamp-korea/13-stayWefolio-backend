@@ -9,7 +9,8 @@ from .models          import Hotel, Room, Category, Location, PriceRange
 
 class MainBannerView(View):
     def get(self, request):
-        hotels  = Hotel.objects.all()[:10]
+        BANNERS = 10
+        hotels  = Hotel.objects.all()[:BANNERS]
         banners = [{
             'name'         : hotel.name,
             'introduction' : hotel.introduction,
@@ -20,7 +21,8 @@ class MainBannerView(View):
 
 class MagazineView(View):
     def get(self, request):
-        hotels    = Hotel.objects.all()[:2]
+        MAGAZINE  = 2
+        hotels    = Hotel.objects.all()[:MAGAZINE]
         magazines = [{
             'name'             : hotel.name,
             'category'         : hotel.category.name,
@@ -34,16 +36,16 @@ class MagazineView(View):
 class PicksView(View):
     def get(self, request):
         hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').all().order_by('id')
-        filter_set=[]
+        filter_set={}
         if request.GET.get('category'):
-            filter_set.append({'category__name':request.GET['category'].strip("'")})
+            filter_set['category__name'] = request.GET['category'].strip("'")
         if request.GET.get('location'):
-            filter_set.append({'location__name__contains':request.GET['location'].strip("'")})
-
-        for field in filter_set:
-            if filter_set == []:
+            filter_set['location__name__contains'] = request.GET['location'].strip("'")
+        
+        for key,value in filter_set.items():
+            if filter_set == {}:
                 break
-            hotels=hotels.filter(**field)
+            hotels=hotels.filter(**{key:value})
 
         if request.GET.get('price'):
             price=request.GET['price'].strip("'").split('~')
@@ -94,10 +96,17 @@ class PicksView(View):
 
 class DetailPageView(View):
     def get(self, request,hotel_id):
-        rooms=Room.objects.select_related('hotel').prefetch_related('roomimage_set','bed_set','facilities','hotel__tags','hotel__services').filter(hotel_id=hotel_id).order_by('id')
+        rooms=Room.objects.select_related('hotel').prefetch_related(
+                                                                    'roomimage_set',
+                                                                    'bed_set',
+                                                                    'facilities',
+                                                                    'hotel__tags',
+                                                                    'hotel__services'
+                                                                    ).filter(hotel_id=hotel_id).order_by('id')
+        
         detail=[{'common_info':{
               'hotel_image_url'   : rooms.first().hotel.thumbnail_url,
-              'room_count'        : len(rooms),
+              'room_count'        : rooms.count(),
               'hotel_name'        : rooms.first().hotel.name,
               'hotel_english_name': rooms.first().hotel.english_name,
               'hotel_introduction': rooms.first().hotel.introduction,
@@ -113,11 +122,30 @@ class DetailPageView(View):
                 'min_people'       : room.min_people,
                 'max_people'       : room.max_people,
                 'area'             : f"{int(room.area)}{chr(0x33A1)}",
-                'bed'              : [{'bed_type':bed.bed_type.name,'number_of_beds':bed.number}for bed in room.bed_set.all()],
-                'tags'             : [tag.name for tag in room.hotel.tags.all()] if len(room.hotel.tags.all())<=3 else [tag.name for tag in room.hotel.tags.all()[:3]],
+                'bed'              : [
+                                        {
+                                            'bed_type'       : bed.bed_type.name,
+                                            'number_of_beds' : bed.number
+                                        } for bed in room.bed_set.all()
+                                    ],
+                'tags'             : [
+                                        tag.name for tag in room.hotel.tags.all()] 
+                                        if len(room.hotel.tags.all())<=3 
+                                        else [tag.name for tag in room.hotel.tags.all()[:3]
+                                    ],
                 'price'            : chr(0x20A9)+"{:,}".format(int(room.price))+'~',
-                'facility'         : [{'name':facility.name, 'icon_url':facility.icon_url} for facility in room.facilities.all()],
-                'service'          : [{'name':service.name, 'icon_url':service.icon_url} for service in room.hotel.services.all()]
+                'facility'         : [
+                                        {
+                                            'name'    : facility.name,
+                                            'icon_url': facility.icon_url
+                                        } for facility in room.facilities.all()
+                                    ],
+                'service'          : [
+                                        {
+                                        'name'    : service.name,
+                                        'icon_url': service.icon_url
+                                        } for service in room.hotel.services.all()
+                                    ]
             } for room in rooms]}
             
         ]
