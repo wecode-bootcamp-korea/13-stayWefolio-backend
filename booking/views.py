@@ -46,3 +46,61 @@ class BookingView(View):
             'prices'      : prices
         }]
         return JsonResponse({'booking_info':booking}, status=200)
+
+    def post(self, request):
+        try:
+            user_id                       = request.user
+            room_id                       = request.GET.get('room_id')
+            data                          = json.loads(request.body)
+            date_from                     = data['start']
+            date_to                       = data['end']
+            name                          = data['name']
+            phone_number                  = data['phone_number']
+            email                         = data['email']
+            adult                         = data['adult']
+            child                         = data['child']
+            infant                        = data['infant']
+            option_breakfast              = data['breakfast']
+            option_pickup                 = data['pickup']
+            demand                        = data['demand']
+            price                         = data['price']
+            discount                      = data['discount']
+            total                         = data['total']
+            payment_id                    = data['payment_id']
+            terms_information_collection  = data['term1']
+            terms_information_third_party = data['term2']
+            terms_information_refund      = data['term3']
+            terms_marketing               = data['term4']
+
+            booking = Booking.objects.create(
+                user_id                       = user_id,
+                room_id                       = room_id,
+                date_from                     = date_from,
+                date_to                       = date_to,
+                name                          = name,
+                phone_number                  = phone_number,
+                email                         = email,
+                adult                         = adult,
+                child                         = child,
+                infant                        = infant,
+                option_breakfast              = option_breakfast,
+                option_pickup                 = option_pickup,
+                demand                        = demand,
+                price                         = price,
+                discount                      = discount,
+                total                         = total,
+                payment_id                    = payment_id,
+                terms_information_collection  = terms_information_collection,
+                terms_information_third_party = terms_information_third_party,
+                terms_information_refund      = terms_information_refund,
+                terms_marketing               = terms_marketing
+            )
+
+            BookedRoom(
+                booking_id = booking.id,
+                room_id    = room_id
+            ).save()
+            return JsonResponse({'message':'SUCCESS'}, status=200)
+
+        except KeyError as e:
+            return JsonResponse({'message':f"{e} IS MISSING"}, status=400)
