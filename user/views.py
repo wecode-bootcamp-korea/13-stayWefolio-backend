@@ -34,7 +34,7 @@ class LoginView(View):
             user     = User.objects.get(email=email)
 
             if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-                access_token  = jwt.encode({'user_id':user.id}, SECRET_KEY, algorithms=ALGORITHM)
+                access_token  = jwt.encode({'user_id':user.id}, SECRET_KEY, algorithm=ALGORITHM)
                 decoded_token = access_token.decode('utf-8')
                 return JsonResponse({'TOKEN': decoded_token}, status=200)
 

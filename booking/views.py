@@ -9,8 +9,10 @@ from django.db.models import Q
 from .models          import Booking, BookedRoom
 from user.models      import User
 from hotel.models     import Room
+from user.utils       import authorize_decorator
 
 class BookingView(View):
+    @authorize_decorator
     def get(self, request):
         room_id           = request.GET.get('room_id')
         room              = get_object_or_404(Room, id=room_id)
