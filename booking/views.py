@@ -44,6 +44,7 @@ class BookingView(View):
                     prices[f"{str(date)}"]=int(room.price_weekend)
 
         booking=[{'stay_at_least' : room.stay_at_least,
+            'room_image': room.roomimage_set.first().image_url,
             'user':{
                 'name' : get_object_or_404(User, id=request.user).name,
                 'email': get_object_or_404(User, id=request.user).email
@@ -114,14 +115,15 @@ class BookingView(View):
             ).save()
 
             booking_info=[{
-                'name'      : booking.user.name,
-                'hotel_name': booking.room.hotel.name,
-                'room_name' : booking.room.name,
-                'adult'     : booking.adult,
-                'child'     : booking.child,
-                'infant'    : booking.infant,
-                'date_from' : booking.date_from,
-                'date_to'   : booking.date_to
+                'name'       : booking.user.name,
+                'hotel_name' : booking.room.hotel.name,
+                'hotel_image': booking.room.hotel.thumbnail_url,
+                'room_name'  : booking.room.name,
+                'adult'      : booking.adult,
+                'child'      : booking.child,
+                'infant'     : booking.infant,
+                'date_from'  : booking.date_from,
+                'date_to'    : booking.date_to
             }]
             return JsonResponse({'booking_info':booking_info}, status=200)
 
