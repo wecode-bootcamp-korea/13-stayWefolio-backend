@@ -9,8 +9,11 @@ from .models          import Hotel, Room, Category, Location, PriceRange
 
 class MainBannerView(View):
     def get(self, request):
-        BANNERS = 10
-        hotels  = Hotel.objects.all()[:BANNERS]
+        BANNERS = request.GET.get('banners')
+        if BANNERS:
+            hotels  = Hotel.objects.all()[:BANNERS]
+        else:
+            hotels  = Hotel.objects.all()
         banners = [{
             'name'         : hotel.name,
             'introduction' : hotel.introduction,
