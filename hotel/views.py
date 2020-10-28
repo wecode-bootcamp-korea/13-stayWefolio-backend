@@ -24,8 +24,12 @@ class MainBannerView(View):
 
 class MagazineView(View):
     def get(self, request):
+<<<<<<< HEAD
         MAGAZINE  = 2
         hotels    = Hotel.objects.all()[:MAGAZINE]
+=======
+        hotels    = Hotel.objects.select_related('category','location').all().order_by('id')[:2]
+>>>>>>> master
         magazines = [{
             'name'             : hotel.name,
             'category'         : hotel.category.name,
