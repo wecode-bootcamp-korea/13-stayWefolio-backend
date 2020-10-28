@@ -38,18 +38,14 @@ class MagazineView(View):
 
 class PicksView(View):
     def get(self, request):
-        hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').all().order_by('id')
         filter_set={}
         if request.GET.get('category'):
             filter_set['category__name'] = request.GET['category'].strip("'")
         if request.GET.get('location'):
             filter_set['location__name__contains'] = request.GET['location'].strip("'")
         
-        for key,value in filter_set.items():
-            if filter_set == {}:
-                break
-            hotels=hotels.filter(**{key:value})
-
+        hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').filter(**filter_set).order_by('id')
+        
         if request.GET.get('price'):
             price=request.GET['price'].strip("'").split('~')
             if price[0] == '':
@@ -96,6 +92,42 @@ class PicksView(View):
         for hotel in hotels]}]
             
         return JsonResponse({'hotels': picks}, status=200)
+
+class PicksDetailView(View):
+    def get(self, request, hotel_id):
+        hotel=Hotel.objects.select_related('category','location').prefetch_related(
+                                                                'room_set',
+                                                                'hotelimage_set',
+                                                                'tags'
+                                                                ).get(id=hotel_id)
+        picks_detail=[{
+            'id'                : hotel.id,
+            'name'              : hotel.name,
+            'english_name'      : hotel.english_name,
+            'address'           : hotel.address,
+            'introduction'      : hotel.introduction,
+            'image_url'         : list(hotel.hotelimage_set.values_list('image_url', flat=True)),
+            'category'          : hotel.category.name,
+            'min_people'        : hotel.min_people,
+            'max_people'        : hotel.max_people,
+            'room_count'        : hotel.room_count,
+            'min_price'         : int(hotel.room_set.aggregate(min_p=Min('price_weekday'))['min_p']),
+            'max_price'         : int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p']),
+            'checkin_time'      : hotel.checkin_time,
+            'checkout_time'     : hotel.checkout_time,
+            'location'          : hotel.location.name,
+            'tags'              : list(hotel.tags.values_list('name', flat=True)),
+            'email'             : hotel.email,
+            'phone_number'      : hotel.phone_number,
+            'description_title' : hotel.description_title,
+            'description_first' : hotel.description_first,
+            'description_second': hotel.description_second,
+            'description_third' : hotel.description_third,
+            'longitude'         : hotel.longitude,
+            'latitude'          : hotel.latitude
+        }]
+
+        return JsonResponse({'picks_detail':picks_detail}, status=200)
 
 class DetailPageView(View):
     def get(self, request,hotel_id):
