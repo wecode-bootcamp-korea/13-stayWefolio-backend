@@ -122,20 +122,23 @@ class BookingView(View):
             return JsonResponse({'message':f"{e}"}, status=400)
 
 class BookingConfirmView(View):
+    @authorize_decorator
     def get(self, request):
-        booking_id=request.GET.get('booking_id')
-        booking=Booking.objects.get(id=booking_id)
+        booking_id=request.GET['booking_id']
+        booking=Booking.objects.select_related('user','room').get(id=booking_id)
+        if request.user == booking.user.id:
+            booking_info=[{
+                    'name'       : booking.user.name,
+                    'hotel_name' : booking.room.hotel.name,
+                    'hotel_image': booking.room.hotel.thumbnail_url,
+                    'room_name'  : booking.room.name,
+                    'adult'      : booking.adult,
+                    'child'      : booking.child,
+                    'infant'     : booking.infant,
+                    'date_from'  : booking.date_from,
+                    'date_to'    : booking.date_to
+                }]
+            return JsonResponse({'booking_info':booking_info}, status=200)
 
-        booking_info=[{
-                'name'       : booking.user.name,
-                'hotel_name' : booking.room.hotel.name,
-                'hotel_image': booking.room.hotel.thumbnail_url,
-                'room_name'  : booking.room.name,
-                'adult'      : booking.adult,
-                'child'      : booking.child,
-                'infant'     : booking.infant,
-                'date_from'  : booking.date_from,
-                'date_to'    : booking.date_to
-            }]
+        return JsonResponse({'message':'CONFIRM FAILED'}, status=401)
         
-        return JsonResponse({'booking_info':booking_info}, status=200)
