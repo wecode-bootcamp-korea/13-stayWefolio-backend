@@ -11,7 +11,7 @@ class MainBannerView(View):
     def get(self, request):
         BANNERS = request.GET.get('banners')
         if BANNERS:
-            hotels  = Hotel.objects.all()[:BANNERS]
+            hotels  = Hotel.objects.all()[:int(BANNERS)]
         else:
             hotels  = Hotel.objects.all()
         banners = [{
