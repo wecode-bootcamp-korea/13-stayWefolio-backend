@@ -114,7 +114,19 @@ class BookingView(View):
                 room_id    = room_id
             ).save()
 
-            booking_info=[{
+            return JsonResponse({'booking_id':booking.id}, status=200)
+
+        except KeyError as e:
+            return JsonResponse({'message':f"{e} IS MISSING"}, status=400)
+        except ObjectDoesNotExist as e:
+            return JsonResponse({'message':f"{e}"}, status=400)
+
+class BookingConfirmView(View):
+    def get(self, request):
+        booking_id=request.GET.get('booking_id')
+        booking=Booking.objects.get(id=booking_id)
+
+        booking_info=[{
                 'name'       : booking.user.name,
                 'hotel_name' : booking.room.hotel.name,
                 'hotel_image': booking.room.hotel.thumbnail_url,
@@ -125,9 +137,5 @@ class BookingView(View):
                 'date_from'  : booking.date_from,
                 'date_to'    : booking.date_to
             }]
-            return JsonResponse({'booking_info':booking_info}, status=200)
-
-        except KeyError as e:
-            return JsonResponse({'message':f"{e} IS MISSING"}, status=400)
-        except ObjectDoesNotExist as e:
-            return JsonResponse({'message':f"{e}"}, status=400)
+        
+        return JsonResponse({'booking_info':booking_info}, status=200)
