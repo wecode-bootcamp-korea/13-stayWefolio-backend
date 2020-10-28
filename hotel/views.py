@@ -9,7 +9,11 @@ from .models          import Hotel, Room, Category, Location, PriceRange
 
 class MainBannerView(View):
     def get(self, request):
-        hotels  = Hotel.objects.all()[:10]
+        BANNERS = request.GET.get('banners')
+        if BANNERS:
+            hotels  = Hotel.objects.all()[:int(BANNERS)]
+        else:
+            hotels  = Hotel.objects.all()
         banners = [{
             'name'         : hotel.name,
             'introduction' : hotel.introduction,
@@ -20,7 +24,8 @@ class MainBannerView(View):
 
 class MagazineView(View):
     def get(self, request):
-        hotels    = Hotel.objects.all()[:2]
+        MAGAZINE  = 2
+        hotels    = Hotel.objects.select_related('category','location').all().order_by('id')[:MAGAZINE]
         magazines = [{
             'name'             : hotel.name,
             'category'         : hotel.category.name,
@@ -33,18 +38,14 @@ class MagazineView(View):
 
 class PicksView(View):
     def get(self, request):
-        hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').all().order_by('id')
-        filter_set=[]
+        filter_set={}
         if request.GET.get('category'):
-            filter_set.append({'category__name':request.GET['category'].strip("'")})
+            filter_set['category__name'] = request.GET['category'].strip("'")
         if request.GET.get('location'):
-            filter_set.append({'location__name__contains':request.GET['location'].strip("'")})
-
-        for field in filter_set:
-            if filter_set == []:
-                break
-            hotels=hotels.filter(**field)
-
+            filter_set['location__name__contains'] = request.GET['location'].strip("'")
+        
+        hotels=Hotel.objects.select_related('category','location').prefetch_related('room_set','tags').filter(**filter_set).order_by('id')
+        
         if request.GET.get('price'):
             price=request.GET['price'].strip("'").split('~')
             if price[0] == '':
@@ -84,23 +85,70 @@ class PicksView(View):
             'thumbnail_url': hotel.thumbnail_url,
             'location'     : hotel.location.name,
             'category'     : hotel.category.name,
-            'min_price'    : "{:,}".format(int(hotel.room_set.aggregate(min_p=Min('price_weekday'))['min_p'])),
-            'max_price'    : "{:,}".format(int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p'])),
+            'min_price'    : int(hotel.room_set.aggregate(min_p=Min('price_weekday'))['min_p']),
+            'max_price'    : int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p']),
             'tags'         : [tag.name for tag in hotel.tags.all()]
             }
         for hotel in hotels]}]
             
         return JsonResponse({'hotels': picks}, status=200)
 
+class PicksDetailView(View):
+    def get(self, request, hotel_id):
+        hotel=Hotel.objects.select_related('category','location').prefetch_related(
+                                                                'room_set',
+                                                                'hotelimage_set',
+                                                                'tags'
+                                                                ).get(id=hotel_id)
+        picks_detail=[{
+            'id'                : hotel.id,
+            'name'              : hotel.name,
+            'english_name'      : hotel.english_name,
+            'address'           : hotel.address,
+            'introduction'      : hotel.introduction,
+            'image_url'         : list(hotel.hotelimage_set.values_list('image_url', flat=True)),
+            'category'          : hotel.category.name,
+            'min_people'        : hotel.min_people,
+            'max_people'        : hotel.max_people,
+            'room_count'        : hotel.room_count,
+            'min_price'         : int(hotel.room_set.aggregate(min_p=Min('price_weekday'))['min_p']),
+            'max_price'         : int(hotel.room_set.aggregate(max_p=Max('price_peak'))['max_p']),
+            'checkin_time'      : hotel.checkin_time,
+            'checkout_time'     : hotel.checkout_time,
+            'location'          : hotel.location.name,
+            'tags'              : list(hotel.tags.values_list('name', flat=True)),
+            'email'             : hotel.email,
+            'phone_number'      : hotel.phone_number,
+            'description_title' : hotel.description_title,
+            'description_first' : hotel.description_first,
+            'description_second': hotel.description_second,
+            'description_third' : hotel.description_third,
+            'longitude'         : hotel.longitude,
+            'latitude'          : hotel.latitude
+        }]
+
+        return JsonResponse({'picks_detail':picks_detail}, status=200)
+
 class DetailPageView(View):
     def get(self, request,hotel_id):
-        rooms=Room.objects.select_related('hotel').prefetch_related('bed_set','facilities','hotel__tags','hotel__services').filter(hotel_id=hotel_id).order_by('id')
+        rooms=Room.objects.select_related('hotel').prefetch_related(
+                                                                    'roomimage_set',
+                                                                    'bed_set',
+                                                                    'facilities',
+                                                                    'hotel__tags',
+                                                                    'hotel__services'
+                                                                    ).filter(hotel_id=hotel_id).order_by('id')
+        
         detail=[{'common_info':{
+              'hotel_image_url'   : rooms.first().hotel.thumbnail_url,
+              'room_count'        : rooms.count(),
               'hotel_name'        : rooms.first().hotel.name,
               'hotel_english_name': rooms.first().hotel.english_name,
               'hotel_introduction': rooms.first().hotel.introduction,
             },
             'rooms':[{
+                'room_id'          : room.id,
+                'room_image'       : [image.image_url for image in room.roomimage_set.all()],
                 'room_name'        : room.name,
                 'room_type'        : room.roomtype_set.first().type.name,
                 'room_introduction': room.introduction,
@@ -109,11 +157,30 @@ class DetailPageView(View):
                 'min_people'       : room.min_people,
                 'max_people'       : room.max_people,
                 'area'             : f"{int(room.area)}{chr(0x33A1)}",
-                'bed'              : [{'bed_type':bed.bed_type.name,'number_of_beds':bed.number}for bed in room.bed_set.all()],
-                'tags'             : [tag.name for tag in room.hotel.tags.all()] if len(room.hotel.tags.all())<=3 else [tag.name for tag in room.hotel.tags.all()[:3]],
+                'bed'              : [
+                                        {
+                                            'bed_type'       : bed.bed_type.name,
+                                            'number_of_beds' : bed.number
+                                        } for bed in room.bed_set.all()
+                                    ],
+                'tags'             : [
+                                        tag.name for tag in room.hotel.tags.all()] 
+                                        if len(room.hotel.tags.all())<=3 
+                                        else [tag.name for tag in room.hotel.tags.all()[:3]
+                                    ],
                 'price'            : chr(0x20A9)+"{:,}".format(int(room.price))+'~',
-                'facility'         : [{'name':facility.name, 'icon_url':facility.icon_url} for facility in room.facilities.all()],
-                'service'          : [{'name':service.name, 'icon_url':service.icon_url} for service in room.hotel.services.all()]
+                'facility'         : [
+                                        {
+                                            'name'    : facility.name,
+                                            'icon_url': facility.icon_url
+                                        } for facility in room.facilities.all()
+                                    ],
+                'service'          : [
+                                        {
+                                        'name'    : service.name,
+                                        'icon_url': service.icon_url
+                                        } for service in room.hotel.services.all()
+                                    ]
             } for room in rooms]}
             
         ]
