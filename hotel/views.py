@@ -25,7 +25,7 @@ class MainBannerView(View):
 class MagazineView(View):
     def get(self, request):
         MAGAZINE  = 2
-        hotels    = Hotel.objects.select_related('category','location').all().order_by('id')[:MAGAZINE]
+        hotels    = Hotel.objects.select_related('category','location').order_by('id')[:MAGAZINE]
         magazines = [{
             'name'             : hotel.name,
             'category'         : hotel.category.name,
