@@ -15,6 +15,7 @@ class MainBannerView(View):
         else:
             hotels  = Hotel.objects.all()
         banners = [{
+            'hotel_id'     : hotel.id,
             'name'         : hotel.name,
             'introduction' : hotel.introduction,
             'thumbnail_url': hotel.thumbnail_url,
