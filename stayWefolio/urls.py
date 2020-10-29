@@ -19,4 +19,5 @@ from django.urls import path, include
 urlpatterns = [
     path('user', include('user.urls')),
     path('main', include('hotel.urls')),
+    path('booking', include('booking.urls')),
 ]
