@@ -5,7 +5,6 @@ from django.views           import View
 from django.shortcuts       import get_object_or_404
 from django.http            import JsonResponse
 from django.db.models       import Q
-from django.core.exceptions import ObjectDoesNotExist
 
 from .models                import Booking, BookedRoom
 from user.models            import User
@@ -63,50 +62,30 @@ class BookingView(View):
     @authorize_decorator
     def post(self, request, room_id):
         try:
-            user_id                       = request.user
-            data                          = json.loads(request.body)
-            date_from                     = data['start']
-            date_to                       = data['end']
-            name                          = data['name']
-            phone_number                  = data['phone_number']
-            email                         = data['email']
-            adult                         = data['adult']
-            child                         = data['child']
-            infant                        = data['infant']
-            option_breakfast              = data['breakfast']
-            option_pickup                 = data['pickup']
-            demand                        = data['demand']
-            price                         = data['price']
-            discount                      = data['discount']
-            total                         = data['total']
-            payment_id                    = data['payment_id']
-            terms_information_collection  = data['term1']
-            terms_information_third_party = data['term2']
-            terms_information_refund      = data['term3']
-            terms_marketing               = data['term4']
+            data    = json.loads(request.body)
 
             booking = Booking.objects.create(
-                user_id                       = user_id,
+                user_id                       = request.user,
                 room_id                       = room_id,
-                date_from                     = date_from,
-                date_to                       = date_to,
-                name                          = name,
-                phone_number                  = phone_number,
-                email                         = email,
-                adult                         = adult,
-                child                         = child,
-                infant                        = infant,
-                option_breakfast              = option_breakfast,
-                option_pickup                 = option_pickup,
-                demand                        = demand,
-                price                         = price,
-                discount                      = discount,
-                total                         = total,
-                payment_id                    = payment_id,
-                terms_information_collection  = terms_information_collection,
-                terms_information_third_party = terms_information_third_party,
-                terms_information_refund      = terms_information_refund,
-                terms_marketing               = terms_marketing
+                date_from                     = data['start'],
+                date_to                       = data['end'],
+                name                          = data['name'],
+                phone_number                  = data['phone_number'],
+                email                         = data['email'],
+                adult                         = data['adult'],
+                child                         = data['child'],
+                infant                        = data['infant'],
+                option_breakfast              = data['breakfast'],
+                option_pickup                 = data['pickup'],
+                demand                        = data['demand'],
+                price                         = data['price'],
+                discount                      = data['discount'],
+                total                         = data['total'],
+                payment_id                    = data['payment_id'],
+                terms_information_collection  = data['term1'],
+                terms_information_third_party = data['term2'],
+                terms_information_refund      = data['term3'],
+                terms_marketing               = data['term4']
             )
 
             BookedRoom(
@@ -114,31 +93,32 @@ class BookingView(View):
                 room_id    = room_id
             ).save()
 
-            return JsonResponse({'booking_id':booking.id}, status=200)
+            return JsonResponse({'message':"SUCCESS😎",'booking_id':booking.id}, status=200)
 
         except KeyError as e:
             return JsonResponse({'message':f"{e} IS MISSING"}, status=400)
-        except ObjectDoesNotExist as e:
-            return JsonResponse({'message':f"{e}"}, status=400)
 
 class BookingConfirmView(View):
     @authorize_decorator
     def get(self, request):
-        booking_id=request.GET['booking_id']
-        booking=Booking.objects.select_related('user','room').get(id=booking_id)
-        if request.user == booking.user.id:
-            booking_info=[{
-                    'name'       : booking.user.name,
-                    'hotel_name' : booking.room.hotel.name,
-                    'hotel_image': booking.room.hotel.thumbnail_url,
-                    'room_name'  : booking.room.name,
-                    'adult'      : booking.adult,
-                    'child'      : booking.child,
-                    'infant'     : booking.infant,
-                    'date_from'  : booking.date_from,
-                    'date_to'    : booking.date_to
-                }]
-            return JsonResponse({'booking_info':booking_info}, status=200)
+        try:
+            booking_id=request.GET['booking_id']
+            booking=Booking.objects.select_related('user','room','room__hotel').get(id=booking_id)
+            if request.user == booking.user.id:
+                booking_info=[{
+                        'name'       : booking.user.name,
+                        'hotel_name' : booking.room.hotel.name,
+                        'hotel_image': booking.room.hotel.thumbnail_url,
+                        'room_name'  : booking.room.name,
+                        'adult'      : booking.adult,
+                        'child'      : booking.child,
+                        'infant'     : booking.infant,
+                        'date_from'  : booking.date_from,
+                        'date_to'    : booking.date_to
+                    }]
+                return JsonResponse({'booking_info':booking_info}, status=200)
+            return JsonResponse({'message': "INVALID USER"}, status=400)
 
-        return JsonResponse({'message':'CONFIRM FAILED'}, status=401)
+        except KeyError as e:
+            return JsonResponse({'message':f"{e} IS MISSING"}, status=400)
         
