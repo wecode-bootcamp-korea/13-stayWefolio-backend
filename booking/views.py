@@ -43,6 +43,7 @@ class BookingView(View):
                     prices[f"{str(date)}"]=int(room.price_weekend)
 
         booking=[{'stay_at_least' : room.stay_at_least,
+            'room_id'   : room.id,
             'room_image': room.roomimage_set.first().image_url,
             'user':{
                 'name' : get_object_or_404(User, id=request.user).name,
