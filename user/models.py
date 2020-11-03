@@ -7,6 +7,6 @@ class User(models.Model):
     terms_service   = models.BooleanField(default=False)
     terms_privacy   = models.BooleanField(default=False)
     terms_marketing = models.BooleanField(default=False)
-
+    is_active       = models.BooleanField(default=False)
     class Meta:
         db_table = 'users'
